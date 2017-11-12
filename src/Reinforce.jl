@@ -1,22 +1,18 @@
 
-__precompile__()
+__precompile__(true)
 
 module Reinforce
 
 using Reexport
 @reexport using StatsBase
 using Distributions
-@reexport using LearnBase
 using RecipesBase
-# using ValueHistories
-# using Parameters
-using StochasticOptimization
-using Transformations
-using PenaltyFunctions
-import OnlineStats: Mean, Variances, Weight, BoundedEqualWeight
 
+@reexport using LearnBase
 import LearnBase: learn!, transform!, grad!, params, grad
-import StochasticOptimization: pre_hook, iter_hook, finished, post_hook
+
+using LearningStrategies
+import LearningStrategies: pre_hook, iter_hook, finished, post_hook
 
 export
 	AbstractEnvironment,
@@ -24,7 +20,9 @@ export
 	step!,
 	reward,
 	state,
+    finished,
 	actions,
+    ismdp,
 
 	AbstractPolicy,
 	RandomPolicy,
@@ -39,8 +37,8 @@ export
 	state!,
 
 	Episode,
-    Episodes
-	# episode!
+    Episodes,
+    run_episode
 
 
 # ----------------------------------------------------------------
@@ -94,6 +92,15 @@ Return the current reward of the environment.
 """
 reward(env::AbstractEnvironment) = env.reward
 
+"""
+`ismdp(env) --> bool`
+
+An environment may be fully observable (MDP) or partially observable (POMDP).  In the case of a partially observable environment, the state `s` is really an observation `o`.  To maintain consistency, we call everything a state, and assume that an environment is free to maintain additional (unobserved) internal state.
+
+The `ismdp` query returns true when the environment is MDP, and false otherwise.
+"""
+ismdp(env::AbstractEnvironment) = false
+
 
 # ----------------------------------------------------------------
 # Implement this interface for a new policy
@@ -122,6 +129,7 @@ include("solvers.jl")
 
 include("envs/cartpole.jl")
 include("envs/pendulum.jl")
+include("envs/mountain_car.jl")
 
 # ----------------------------------------------------------------
 # a keyboard action space
@@ -130,7 +138,7 @@ immutable KeyboardAction
     key
 end
 
-type KeyboardActionSet <: AbstractSet
+type KeyboardActionSet{T} <: AbstractSet{T}
     keys::Vector
 end
 
@@ -148,7 +156,7 @@ immutable MouseAction
     button::Int
 end
 
-type MouseActionSet <: AbstractSet
+type MouseActionSet{T} <: AbstractSet{T}
     screen_width::Int
     screen_height::Int
     button::DiscreteSet{Vector{Int}}

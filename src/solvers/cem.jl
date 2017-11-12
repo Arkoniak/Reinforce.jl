@@ -47,7 +47,7 @@ function CrossEntropyMethod(; #f::Function;
 end
 
 function pre_hook(strat::CrossEntropyMethod, policy)
-    n = length(Transformations.params(policy))
+    n = length(params(policy))
     strat.n = n
     strat.μ = zeros(n)
     strat.last_μ = zeros(n)
@@ -67,8 +67,13 @@ function learn!(policy::AbstractPolicy, strat::CrossEntropyMethod, env::Abstract
 
     # overwrite the parameters of the policy and run an episode for each θ
     Rs = map(θ -> begin
-        Transformations.params(policy)[:] = θ
-        R, T = episode!(env, policy; maxsteps = strat.maxsteps)
+        params(policy)[:] = θ
+        R = 0
+        for (i,sars) in enumerate(Episode(env,policy))
+            R += sars[3]
+            i < strat.maxsteps || break
+        end
+        # R, T = episode!(env, policy; maxsteps = strat.maxsteps)
         R
     end, θs)
 

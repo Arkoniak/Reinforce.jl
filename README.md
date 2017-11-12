@@ -1,6 +1,6 @@
-# Reinforce (WIP)
+# Reinforce
 
-[![Build Status](https://travis-ci.org/tbreloff/Reinforce.jl.svg?branch=master)](https://travis-ci.org/tbreloff/Reinforce.jl)
+[![Build Status](https://travis-ci.org/JuliaML/Reinforce.jl.svg?branch=master)](https://travis-ci.org/JuliaML/Reinforce.jl)
 [![Gitter](https://badges.gitter.im/reinforcejl/Lobby.svg)](https://gitter.im/reinforcejl/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
 Reinforce.jl is an interface for Reinforcement Learning.  It is intended to connect modular environments, policies, and solvers with a simple interface.
@@ -12,8 +12,8 @@ Reinforce.jl is an interface for Reinforcement Learning.  It is intended to conn
 
 Packages which build on Reinforce:
 
-- [AtariAlgos](https://github.com/tbreloff/AtariAlgos.jl): Environment which wraps Atari games using [ArcadeLearningEnvironment](https://github.com/nowozin/ArcadeLearningEnvironment.jl)
-- [OpenAIGym](https://github.com/tbreloff/OpenAIGym.jl): Wrapper for OpenAI's python package: gym
+- [AtariAlgos](https://github.com/JuliaML/AtariAlgos.jl): Environment which wraps Atari games using [ArcadeLearningEnvironment](https://github.com/nowozin/ArcadeLearningEnvironment.jl)
+- [OpenAIGym](https://github.com/JuliaML/OpenAIGym.jl): Wrapper for OpenAI's python package: gym
 
 ---
 
@@ -31,6 +31,12 @@ and optional overrides:
 
 which map to `env.state` and `env.reward` respectively when unset.
 
+- `ismdp(env) --> bool`
+
+An environment may be fully observable (MDP) or partially observable (POMDP).  In the case of a partially observable environment, the state `s` is really an observation `o`.  To maintain consistency, we call everything a state, and assume that an environment is free to maintain additional (unobserved) internal state.  The `ismdp` query returns true when the environment is MDP, and false otherwise.
+
+---
+
 TODO: more details and examples
 
 ---
@@ -46,16 +52,25 @@ The `action` method maps the last reward and current state to the next chosen ac
 
 ---
 
-Iterate through episodes using the `Episode` iterator.  The convenience method `episode!` demonstrates this:
+Iterate through episodes using the `Episode` iterator.  A 4-tuple `(s,a,r,s′)` is returned from each step of the episode:
 
 ```julia
-function episode!(env, policy = RandomPolicy(); stepfunc = on_step, kw...)
-	ep = Episode(env, policy; kw...)
-	for sars in ep
-		stepfunc(env, ep.niter, sars)
-	end
-	ep.total_reward, ep.niter
+ep = Episode(env, policy)
+for (s, a, r, s′) in ep
+    # do some custom processing of the sars-tuple
+end
+R = ep.total_reward
+T = ep.niter
+```
+
+There is also a convenience method `run_episode`.  The following is an equivalent method to the last example:
+
+```julia
+R = run_episode(env, policy) do
+    # anything you want... this section is called after each step
 end
 ```
 
-A 4-tuple `(s,a,r,s′)` is returned from each step of the episode.  Whether we write `r` or `r′` is a matter of convention.
+---
+
+## Author: [Tom Breloff](https://github.com/tbreloff)
